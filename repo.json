@@ -1,6 +1,6 @@
 {
-    "name": "DDizi Repository",
-    "description": "DDizi.im için CloudStream eklentisi",
+    "name": "Yunus60 Repository",
+    "description": "CloudStream eklenti listesi",
     "manifestVersion": 1,
     "pluginLists": [
         "https://raw.githubusercontent.com/yunus60/cloudstream-providers/main/builds/plugins.json"
