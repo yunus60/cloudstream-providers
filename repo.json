@@ -3,6 +3,6 @@
     "description": "DDizi.im için CloudStream eklentisi",
     "manifestVersion": 1,
     "pluginLists": [
-        "https://raw.githubusercontent.com/yunus60/cloudstream-providers/builds/plugins.json"
+        "https://raw.githubusercontent.com/yunus60/cloudstream-providers/main/builds/plugins.json"
     ]
 }
