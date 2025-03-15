@@ -12,7 +12,10 @@ Bu repo, [CloudStream](https://github.com/recloudstream/cloudstream) uygulaması
 
 1. CloudStream uygulamasını açın
 2. Ayarlar > Eklentiler > Depo Ekle bölümüne gidin
-3. Depo URL'si olarak `https://github.com/yunus60/cloudstream-providers` ekleyin
+3. Depo URL'si olarak aşağıdaki adresi ekleyin:
+```
+https://raw.githubusercontent.com/yunus60/cloudstream-providers/main/repo.json
+```
 4. Eklentiler listesinden istediğiniz eklentiyi bulun ve yükleyin
 
 ## Geliştirme
