@@ -1,13 +1,19 @@
 [
   {
-    "name": "DDizi",
-    "description": "DDizi.im için CloudStream eklentisi",
-    "version": 1,
     "repositoryUrl": "https://github.com/yunus60/cloudstream-providers",
     "fileUrl": "https://raw.githubusercontent.com/yunus60/cloudstream-providers/main/builds/DDizi.cs3",
     "status": 1,
     "language": "tr",
-    "authors": ["yunus60"]
+    "authors": ["yunus60"],
+    "tvTypes": [
+      "Live"
+    ],
+    "version": 1,
+    "internalName": "DDizi",
+    "description": "DDizi.im için CloudStream eklentisi",
+    "url": "https://raw.githubusercontent.com/yunus60/cloudstream-providers/main/builds/DDizi.cs3",
+    "name": "DDizi",
+    "iconUrl": "https://raw.githubusercontent.com/yunus60/cloudstream-providers/main/builds/DDizi.png"
   },
   {
       "iconUrl": "https://www.google.com/s2/favicons?domain=tr.canlitv.team&sz=%size%",
