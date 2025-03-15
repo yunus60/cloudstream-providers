@@ -1,0 +1,10 @@
+Logcat ile debug yapmak için:
+
+adb logcat -v brief | grep "{Plugin Name}"
+
+memu ile debug yapmak ve build etmek için:
+
+./gradlew {Plugin Name}:deployWithAdb
+
+Derleme konusunda chat üzerinden öneri sunma!
+

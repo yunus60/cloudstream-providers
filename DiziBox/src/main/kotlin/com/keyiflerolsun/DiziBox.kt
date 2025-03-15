@@ -39,6 +39,7 @@ class DiziBox : MainAPI() {
             val doc      = Jsoup.parse(response.peekBody(1024 * 1024).string())
 
             if (doc.text().contains("Güvenlik taramasından geçiriliyorsunuz. Lütfen bekleyiniz..")) {
+                Log.d("DiziBox:", "CloudFlare koruması tespit edildi, bypass deneniyor...")
                 return cloudflareKiller.intercept(chain)
             }
 
@@ -76,6 +77,8 @@ class DiziBox : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url      = request.data.replace("SAYFA", "$page")
+        Log.d("DiziBox:", "Ana sayfa yükleniyor: $url")
+        
         val document = app.get(
             url,
             cookies     = mapOf(
@@ -85,7 +88,9 @@ class DiziBox : MainAPI() {
             ),
             interceptor = interceptor
         ).document
-        val home     = document.select("article.detailed-article").mapNotNull { it.toMainPageResult() }
+        
+        val home = document.select("article.detailed-article").mapNotNull { it.toMainPageResult() }
+        Log.d("DiziBox:", "${request.name} kategorisinde ${home.size} sonuç bulundu")
 
         return newHomePageResponse(request.name, home)
     }
@@ -94,11 +99,15 @@ class DiziBox : MainAPI() {
         val title     = this.selectFirst("h3 a")?.text() ?: return null
         val href      = fixUrlNull(this.selectFirst("h3 a")?.attr("href")) ?: return null
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
+        
+        Log.d("DiziBox:", "Dizi bulundu: $title, $href, poster: $posterUrl")
 
         return newTvSeriesSearchResponse(title, href, TvType.TvSeries) { this.posterUrl = posterUrl }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        Log.d("DiziBox:", "Arama yapılıyor: $query")
+        
         val document = app.get(
             "${mainUrl}/?s=${query}",
             cookies     = mapOf(
@@ -109,12 +118,17 @@ class DiziBox : MainAPI() {
             interceptor = interceptor
         ).document
 
-        return document.select("article.detailed-article").mapNotNull { it.toMainPageResult() }
+        val results = document.select("article.detailed-article").mapNotNull { it.toMainPageResult() }
+        Log.d("DiziBox:", "Arama sonuçları: ${results.size} sonuç bulundu")
+        
+        return results
     }
 
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        Log.d("DiziBox:", "Dizi yükleniyor: $url")
+        
         val document = app.get(
             url,
             cookies     = mapOf(
@@ -133,10 +147,16 @@ class DiziBox : MainAPI() {
         val rating      = document.selectFirst("span.label-imdb b")?.text()?.trim()?.toRatingInt()
         val actors      = document.select("a[href*='/oyuncu/']").map { Actor(it.text()) }
         val trailer     = document.selectFirst("div.tv-overview iframe")?.attr("src")
+        
+        Log.d("DiziBox:", "Dizi bilgileri: $title, $year, poster: $poster, rating: $rating")
+        Log.d("DiziBox:", "Dizi türleri: ${tags.joinToString(", ")}")
+        Log.d("DiziBox:", "Oyuncular: ${actors.joinToString(", ") { it.name }}")
 
         val episodeList = mutableListOf<Episode>()
         document.select("div#seasons-list a").forEach {
             val epUrl = fixUrlNull(it.attr("href")) ?: return@forEach
+            Log.d("DiziBox:", "Sezon sayfası yükleniyor: $epUrl")
+            
             val epDoc = app.get(
                 epUrl,
                 cookies     = mapOf(
@@ -152,6 +172,8 @@ class DiziBox : MainAPI() {
                 val epHref    = fixUrlNull(epElem.selectFirst("div.post-title a")?.attr("href")) ?: return@ep
                 val epSeason  = Regex("""(\d+)\. ?Sezon""").find(epTitle)?.groupValues?.get(1)?.toIntOrNull() ?: 1
                 val epEpisode = Regex("""(\d+)\. ?Bölüm""").find(epTitle)?.groupValues?.get(1)?.toIntOrNull()
+                
+                Log.d("DiziBox:", "Bölüm bulundu: $epTitle, S${epSeason}E${epEpisode}, $epHref")
 
                 episodeList.add(newEpisode(epHref) {
                     this.name = epTitle
@@ -160,6 +182,8 @@ class DiziBox : MainAPI() {
                 })
             }
         }
+        
+        Log.d("DiziBox:", "Toplam ${episodeList.size} bölüm bulundu")
 
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodeList) {
             this.posterUrl = poster
@@ -174,8 +198,10 @@ class DiziBox : MainAPI() {
 
     private suspend fun iframeDecode(data:String, iframe:String, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         @Suppress("NAME_SHADOWING") var iframe = iframe
+        Log.d("DiziBox:", "iframeDecode başlatılıyor: $iframe")
 
         if (iframe.contains("/player/king/king.php")) {
+            Log.d("DiziBox:", "King player tespit edildi")
             iframe = iframe.replace("king.php?v=", "king.php?wmode=opaque&v=")
             val subDoc = app.get(
                 iframe,
@@ -188,13 +214,17 @@ class DiziBox : MainAPI() {
                 interceptor = interceptor
             ).document
             val subFrame = subDoc.selectFirst("div#Player iframe")?.attr("src") ?: return false
+            Log.d("DiziBox:", "King alt iframe: $subFrame")
 
             val iDoc          = app.get(subFrame, referer="${mainUrl}/").text
             val cryptData     = Regex("""CryptoJS\.AES\.decrypt\("(.*)","""").find(iDoc)?.groupValues?.get(1) ?: return false
             val cryptPass     = Regex("""","(.*)"\);""").find(iDoc)?.groupValues?.get(1) ?: return false
+            Log.d("DiziBox:", "CryptoJS şifreleme tespit edildi, çözülüyor...")
+            
             val decryptedData = CryptoJS.decrypt(cryptPass, cryptData)
             val decryptedDoc  = Jsoup.parse(decryptedData)
             val vidUrl        = Regex("""file: '(.*)',""").find(decryptedDoc.html())?.groupValues?.get(1) ?: return false
+            Log.d("DiziBox:", "Video URL bulundu: $vidUrl")
 
             callback.invoke(
                 ExtractorLink(
@@ -208,6 +238,7 @@ class DiziBox : MainAPI() {
             )
 
         } else if (iframe.contains("/player/moly/moly.php")) {
+            Log.d("DiziBox:", "Moly player tespit edildi")
             iframe = iframe.replace("moly.php?h=", "moly.php?wmode=opaque&h=")
             var subDoc = app.get(
                 iframe,
@@ -222,16 +253,19 @@ class DiziBox : MainAPI() {
 
             val atobData = Regex("""unescape\("(.*)"\)""").find(subDoc.html())?.groupValues?.get(1)
             if (atobData != null) {
+                Log.d("DiziBox:", "Base64 şifreleme tespit edildi, çözülüyor...")
                 val decodedAtob = atobData.decodeUri()
                 val strAtob     = String(Base64.decode(decodedAtob, Base64.DEFAULT), Charsets.UTF_8)
                 subDoc          = Jsoup.parse(strAtob)
             }
 
             val subFrame = subDoc.selectFirst("div#Player iframe")?.attr("src") ?: return false
+            Log.d("DiziBox:", "Moly alt iframe: $subFrame")
 
             loadExtractor(subFrame, "${mainUrl}/", subtitleCallback, callback)
 
         } else if (iframe.contains("/player/haydi.php")) {
+            Log.d("DiziBox:", "Haydi player tespit edildi")
             iframe = iframe.replace("haydi.php?v=", "haydi.php?wmode=opaque&v=")
             var subDoc = app.get(
                 iframe,
@@ -246,12 +280,14 @@ class DiziBox : MainAPI() {
 
             val atobData = Regex("""unescape\("(.*)"\)""").find(subDoc.html())?.groupValues?.get(1)
             if (atobData != null) {
+                Log.d("DiziBox:", "Base64 şifreleme tespit edildi, çözülüyor...")
                 val decodedAtob = atobData.decodeUri()
                 val strAtob     = String(Base64.decode(decodedAtob, Base64.DEFAULT), Charsets.UTF_8)
                 subDoc          = Jsoup.parse(strAtob)
             }
 
             val subFrame = subDoc.selectFirst("div#Player iframe")?.attr("src") ?: return false
+            Log.d("DiziBox:", "Haydi alt iframe: $subFrame")
 
             loadExtractor(subFrame, "${mainUrl}/", subtitleCallback, callback)
         }

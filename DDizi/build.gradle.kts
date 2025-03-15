@@ -1,15 +1,9 @@
 version = 1
 
-android {
-    defaultConfig {
-        namespace = "com.keyiflerolsun.ddizi"
-    }
-}
-
 cloudstream {
-    language = "tr"
-    description = "DDizi.im üzerinden dizi izleyebilmenizi sağlar"
-    authors = listOf("keyiflerolsun")
+    authors     = listOf("yunus60")
+    language    = "tr"
+    description = "Ddizi, dizi izle, dizi seyret, ddizi.im - Güncel ve eski dizileri en iyi görüntü kalitesiyle bulabileceğiniz dizi izleme sitesi."
 
     /**
      * Status int as the following:
@@ -17,9 +11,14 @@ cloudstream {
      * 1: Ok
      * 2: Slow
      * 3: Beta only
-     * */
-    status = 1 // will be 3 if unspecified
-    tvTypes = listOf(
-        "TvSeries",
-    )
-} 
+    **/
+    status  = 1 // will be 3 if unspecified
+    tvTypes = listOf("TvSeries")
+    iconUrl = "https://www.google.com/s2/favicons?domain=ddizi.im&sz=%size%"
+}
+
+android {
+    defaultConfig {
+        namespace = "com.yunus60"
+    }
+}
